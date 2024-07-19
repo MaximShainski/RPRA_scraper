@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 from openpyxl import load_workbook
 from datetime import datetime
+import numpy
 import os
 import re
 
@@ -40,103 +41,144 @@ def checkChanges():
     driver.get('https://excesssoilnotices.rpra.ca/s/?language=en_US')   
     wait = WebDriverWait(driver, 5)
     name = input("Click enter when done the captcha")
-    counter = -1
-    while counter < 4:
-        counter += 1
-        time.sleep(3)
-        elements = driver.find_elements(By.XPATH, '//*[@data-aura-class="cRegistryPublicPortalFilingAction"]')
-        municipalities = driver.find_elements(By.XPATH, '//span[contains(@class, "uiOutputText") and substring(text(), string-length(text()) - 2) = " of"]')
-        notice = driver.find_elements(By.XPATH, '//span[contains(@class, "uiOutputText") and (text()="RS" or text()="PA")]')
-        if notice[counter].text == "RS":
-            worksheet = workbook['Reuse']
-        elif notice[counter].text == "PA":
-            worksheet = workbook['Project Area']
-        else:
-            continue
-        municipality = municipalities[counter]
- 
-        if worksheet == workbook['Reuse']:
-             row = worksheet.max_row + 1
+    try:
+        arrowEnabled = True
+        arrowCounter = -1
+        while (arrowEnabled):
+            counter = -1
+            arrowCounter += 1
+            time.sleep(numpy.random.uniform(1,2))
+            #arrows = driver.find_elements(By.XPATH, '//button[@class="slds-button slds-button_outline-brand buttonSize textFont textColour" and @type="button"]')
+            nextArrow = driver.find_element(By.XPATH, '(//button[@class="slds-button slds-button_outline-brand buttonSize textFont textColour" and @type="button"])[3]')
+            arrowEnabled = nextArrow.is_enabled()
+            municipalities = driver.find_elements(By.XPATH, '//span[contains(@class, "uiOutputText") and substring(text(), string-length(text()) - 2) = " of"]')
 
-             worksheet['F' + str(row)] = municipality.text.split(",")[0]
+            while counter < len(municipalities) - 1:
+                for n in range(arrowCounter):
+                    time.sleep(numpy.random.uniform(1,2))
+                    nextArrow = driver.find_element(By.XPATH, '(//button[@class="slds-button slds-button_outline-brand buttonSize textFont textColour" and @type="button"])[3]')
+                    try:
+                        nextArrow.click()
+                    except:
+                        input("Solve the captcha and then click enter in the terminal")
+                time.sleep(numpy.random.uniform(1,2))
+                counter += 1
+                elements = driver.find_elements(By.XPATH, '//*[@data-aura-class="cRegistryPublicPortalFilingAction"]')
+                municipalities = driver.find_elements(By.XPATH, '//span[contains(@class, "uiOutputText") and substring(text(), string-length(text()) - 2) = " of"]')
+                notice = driver.find_elements(By.XPATH, '//span[contains(@class, "uiOutputText") and (text()="RS" or text()="PA")]')
+                if notice[counter].text == "RS":
+                    worksheet = workbook['Reuse']
+                elif notice[counter].text == "PA":
+                    worksheet = workbook['Project Area']
+                else:
+                    continue
+                municipality = municipalities[counter]
+        
+                if worksheet == workbook['Reuse']:
+                    row = worksheet.max_row + 1
 
-             elements[counter].click()
+                    worksheet['F' + str(row)] = municipality.text.split(",")[0]
+                    try:
+                        elements[counter].click()
+                    except:
+                        input("Solve the captcha and then click enter in the terminal (2)")
+                        elements[counter].click()
 
-             time.sleep(3)
+                    time.sleep(numpy.random.uniform(2,4))
 
-             projectName = driver.find_element(By.XPATH, '//*[starts-with(@data-aura-rendered-by, "225")]')
-             worksheet['A' + str(row)] = projectName.text
+                    projectName = driver.find_element(By.XPATH, '//*[starts-with(@data-aura-rendered-by, "225")]')
+                    worksheet['A' + str(row)] = projectName.text
 
-             companyName = driver.find_element(By.XPATH, '//*[starts-with(@data-aura-rendered-by, "40:") and @class = "slds-cell-wrap"]')
-             worksheet['B' + str(row)] = companyName.text
+                    companyName = driver.find_element(By.XPATH, '//*[starts-with(@data-aura-rendered-by, "40:") and @class = "slds-cell-wrap"]')
+                    worksheet['B' + str(row)] = companyName.text
 
-             location = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "24:") and @class="uiOutputText" and contains(., ",")]')
-             worksheet['C' + str(row)] = location.text
+                    location = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "24:") and @class="uiOutputText" and contains(., ",")]')
+                    worksheet['C' + str(row)] = location.text
 
-             table = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "47") and contains (., "-")]')
-             worksheet['D' + str(row)] = table.text
+                    table = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "47") and contains (., "-")]')
+                    worksheet['D' + str(row)] = table.text
 
-             soil = driver.find_element(By.XPATH, '//*[contains(@data-aura-rendered-by, "729")]')
-             worksheet['E' + str(row)] = soil.text
+                    soil = driver.find_element(By.XPATH, '//*[contains(@data-aura-rendered-by, "729")]')
+                    worksheet['E' + str(row)] = soil.text
 
-             dateAdded = driver.find_element(By.XPATH, '//lightning-formatted-date-time[starts-with(@data-aura-rendered-by, "53")]')
-             cleanDate = dateAdded.text
-             formattedDate = datetime.strptime(cleanDate, '%d-%b-%Y') # Convert datetime object to date
-             worksheet['G' + str(row)] = formattedDate.strftime('%Y-%m-%d') # Format as string without time
+                    dateAdded = driver.find_element(By.XPATH, '//lightning-formatted-date-time[starts-with(@data-aura-rendered-by, "53")]')
+                    cleanDate = dateAdded.text
+                    formattedDate = datetime.strptime(cleanDate, '%d-%b-%Y') # Convert datetime object to date
+                    worksheet['G' + str(row)] = formattedDate.strftime('%Y-%m-%d') # Format as string without time
 
-             contactName = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "24:") and @class="uiOutputText" and not(contains(., ","))]')
-             contactMail = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "87")]')
-             worksheet['H' + str(row)] = contactName.text + " " + contactMail.text
+                    contactName = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "24:") and @class="uiOutputText" and not(contains(., ","))]')
+                    contactMail = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "87")]')
+                    worksheet['H' + str(row)] = contactName.text + " " + contactMail.text
 
-             #url = driver.current_url
-             worksheet['I' + str(row)] = driver.current_url
+                    #url = driver.current_url
+                    worksheet['I' + str(row)] = driver.current_url
 
-             coordinates = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "46") and @class="uiOutputText" and contains(., ",") and contains(translate(., "0123456789,-", ""), "")]')
-             worksheet['J' + str(row)] = coordinates.text
+                    coordinates = driver.find_element(By.XPATH, '//span[contains(@data-aura-rendered-by, "46") and @class="uiOutputText" and contains(., ",") and contains(translate(., "0123456789,-", ""), "")]')
+                    worksheet['J' + str(row)] = coordinates.text
 
-        elif (worksheet == workbook['Project Area']):
-             row = worksheet.max_row + 1
+                elif (worksheet == workbook['Project Area']):
+                    row = worksheet.max_row
 
-             #worksheet['F' + str(row)] = municipality.text.split(",")[0]
+                    #worksheet['F' + str(row)] = municipality.text.split(",")[0]
+                    try:
+                        elements[counter].click()
+                    except:
+                        input("Solve the captcha and then click enter in the terminal (3)")
 
-             elements[counter].click()
+                    time.sleep(numpy.random.uniform(2,4))
+                    
+                    siteNames = driver.find_elements(By.XPATH, "//div[@class='slds-cell-wrap' and text()='Site Name']/following::td[1]")
+                    for item in siteNames:
+                        row += 1
+                        projectName = driver.find_element(By.XPATH, '//*[contains(@data-aura-rendered-by, "228")]')
+                        worksheet['A' + str(row)] = projectName.text
 
-             time.sleep(3)
-             
-             siteNames = driver.find_elements(By.XPATH, "//div[@class='slds-cell-wrap' and text()='Site Name']/following::td[1]")
-             for item in siteNames:
-                projectName = driver.find_element(By.XPATH, '//*[contains(@data-aura-rendered-by, "228")]')
-                worksheet['A' + str(row)] = projectName.text
+                        companyName = driver.find_element(By.XPATH, '//*[starts-with(@data-aura-rendered-by, "40:") and @class = "slds-cell-wrap"]')
+                        worksheet['B' + str(row)] = companyName.text
+                        try:
+                            driver.find_element(By.XPATH, '//*[contains(@data-aura-rendered-by, "316") and @class = "slds-truncate"]')
+                            location = driver.find_element(By.XPATH, '//lightning-formatted-rich-text[contains(@data-aura-rendered-by, "323")]/span[@part="formatted-rich-text"]')
+                        except:
+                            location = driver.find_elements(By.XPATH, '//*[self::lightning-formatted-rich-text/span[@part="formatted-rich-text" and normalize-space(.)] or self::span[@part="formatted-rich-text" and normalize-space(.)]]')
+                            location = location[5]
+                        worksheet['C' + str(row)] = location.text
 
-                companyName = driver.find_element(By.XPATH, '//*[starts-with(@data-aura-rendered-by, "40:") and @class = "slds-cell-wrap"]')
-                worksheet['B' + str(row)] = companyName.text
-                try:
-                    driver.find_element(By.XPATH, '//*[contains(@data-aura-rendered-by, "316") and @class = "slds-truncate"]')
-                    location = driver.find_element(By.XPATH, '//lightning-formatted-rich-text[contains(@data-aura-rendered-by, "323")]/span[@part="formatted-rich-text"]')
-                except:
-                    location = driver.find_elements(By.XPATH, '//*[self::lightning-formatted-rich-text/span[@part="formatted-rich-text" and normalize-space(.)] or self::span[@part="formatted-rich-text" and normalize-space(.)]]')
-                    location = location[5]
-                worksheet['C' + str(row)] = location.text
+                        city = driver.find_element(By.XPATH, "//div[text()='Municipality']/following::td[1]")
+                        worksheet['D' + str(row)] = city.text.split(",")[0]
 
-                city = driver.find_element(By.XPATH, "//div[text()='Municipality']/following::td[1]")
-                worksheet['D' + str(row)] = city.text.split(",")[0]
+                        site = item.text
+                        worksheet['E' + str(row)] = site
 
-                site = item.text
-                worksheet['E' + str(row)] = site
+                        soil = driver.find_element(By.XPATH, '//*[text()="' + site + '"]/following::td[contains(., "Estimated Amount of Soil (m3)")]/following-sibling::td[1]')
+                        worksheet['F' + str(row)] = soil.text
 
-                soil = driver.find_element(By.XPATH, "//div[text()='Total Estimated Amount of Excess Soil (m3)']/following::td[1]")
-                worksheet['F' + str(row)] = soil.text
+                        dateAdded = driver.find_element(By.XPATH, '//lightning-formatted-date-time[starts-with(@data-aura-rendered-by, "53")]')
+                        cleanDate = dateAdded.text #Might have to change depending on whetehr it's date submitted or modified, right now it's submitted
+                        formattedDate = datetime.strptime(cleanDate, '%d-%b-%Y') # Convert datetime object to date
+                        worksheet['H' + str(row)] = formattedDate.strftime('%Y-%m-%d') # Format as string without time     
 
-                dateAdded = driver.find_element(By.XPATH, '//lightning-formatted-date-time[starts-with(@data-aura-rendered-by, "53")]')
-                cleanDate = dateAdded.text #Might have to change depending on whetehr it's date submitted or modified, right now it's submitted
-                formattedDate = datetime.strptime(cleanDate, '%d-%b-%Y') # Convert datetime object to date
-                worksheet['H' + str(row)] = formattedDate.strftime('%Y-%m-%d') # Format as string without time     
+                        operator = driver.find_element(By.XPATH, "//span[@class='uiOutputEmail' and contains(@data-aura-rendered-by, '197')]/a")
+                        worksheet['I' + str(row)] = operator.text
 
-                operator = driver.find_element(By.XPATH, "//span[@class='uiOutputEmail' and contains(@data-aura-rendered-by, '197')]/a")
-                worksheet['F' + str(row)] = operator.text
+                        qualifiedCompany = driver.find_elements(By.XPATH, "//div[text()='Company Name']/following::td[1]")
+                        worksheet['J' + str(row)] = qualifiedCompany[1].text
 
-        driver.execute_script("window.history.go(-1)")
+                        qualifiedPersonName = driver.find_element(By.XPATH, "//div[text()='Contact Name']/following::td[1]")
+                        qualifiedPersonContact = driver.find_element(By.XPATH, "//div[text()='Email']/following::td[1]")
+                        worksheet['K' + str(row)] = qualifiedPersonName.text + " " + qualifiedPersonContact.text
 
-    workbook.save(filename="test.xlsx")
+                        worksheet['L' + str(row)] = driver.current_url
+
+                        latitude = driver.find_element(By.XPATH, '//*[text()="' + site + '"]/following::td[contains(., "Latitude")]/following-sibling::td[1]')
+                        worksheet['M' + str(row)] = latitude.text
+
+                        latitude = driver.find_element(By.XPATH, '//*[text()="' + site + '"]/following::td[contains(., "Latitude")]/following-sibling::td[1]')
+                        worksheet['N' + str(row)] = latitude.text
+
+                driver.execute_script("window.history.go(-1)")
+    finally:
+        workbook.save(filename="test.xlsx")
+        driver.quit()
+        
 
 checkChanges()
